@@ -20,7 +20,7 @@ if(NOT EXISTS "${CHRONO_SRC_DIR}/CMakeLists.txt")
   message(FATAL_ERROR "Chrono submodule not found at ${CHRONO_SRC_DIR}. Run: git submodule update --init --recursive")
 endif()
 
-ExternalProject_Add(chrono_ep
+ExternalProject_Add(chrono
   SOURCE_DIR  ${CHRONO_SRC_DIR}
   BINARY_DIR  ${CHRONO_BUILD_DIR}
   INSTALL_DIR ${CHRONO_INSTALL_DIR}
@@ -44,10 +44,10 @@ ExternalProject_Add(chrono_ep
   LOG_OUTPUT_ON_FAILURE 1
 )
 
-ExternalProject_Add(vehicle_sw_ep
+ExternalProject_Add(project-external
   SOURCE_DIR ${CMAKE_SOURCE_DIR}/project
-  BINARY_DIR ${CMAKE_BINARY_DIR}/vehicle_sw-build
-  DEPENDS chrono_ep
+  BINARY_DIR ${CMAKE_BINARY_DIR}/project-build
+  DEPENDS chrono
 
   CMAKE_ARGS
     -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
@@ -61,9 +61,9 @@ ExternalProject_Add(vehicle_sw_ep
 
 # Export compile_commands.json to the top build directory
 add_custom_target(compile_commands ALL
-  DEPENDS vehicle_sw_ep
+  DEPENDS project-external
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
-          ${CMAKE_BINARY_DIR}/vehicle_sw-build/compile_commands.json
+          ${CMAKE_BINARY_DIR}/project-build/compile_commands.json
           ${CMAKE_BINARY_DIR}/compile_commands.json
 )
 
