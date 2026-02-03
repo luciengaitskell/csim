@@ -3,6 +3,18 @@ project(csim_superbuild LANGUAGES NONE)
 
 include(ExternalProject)
 
+if(NOT CMAKE_CONFIGURATION_TYPES)
+  if(NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
+    # chrono is significantly faster to run in Release mode
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
+    message(NOTICE "CMAKE_BUILD_TYPE not specified, defaulting to ${CMAKE_BUILD_TYPE}")
+  else()
+    message(NOTICE "CMAKE_BUILD_TYPE already set to ${CMAKE_BUILD_TYPE}")
+  endif()
+else()
+  message(NOTICE "Ignoring CMAKE_BUILD_TYPE for multi-config generators")
+endif()
+
 # -------- Modules
 set(CSIM_ENABLE_CHRONO_VEHICLE ON  CACHE BOOL "Build Chrono Vehicle module")
 set(CSIM_ENABLE_CHRONO_SENSOR  OFF CACHE BOOL "Build Chrono Sensor module")
