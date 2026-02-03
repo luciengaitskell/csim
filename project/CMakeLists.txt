@@ -12,3 +12,9 @@ find_package(Chrono
 
 add_executable(vehicle_sw src/main.cpp)
 target_link_libraries(vehicle_sw PRIVATE ${CHRONO_TARGETS})
+
+if(DEFINED CHRONO_DATA_DIR)
+  target_compile_definitions(vehicle_sw PRIVATE CHRONO_DATA_DIR="${CHRONO_DATA_DIR}")
+else()
+  message(WARNING "CHRONO_DATA_DIR is not defined by chrono in the superbuild.")
+endif()
