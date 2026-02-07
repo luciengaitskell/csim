@@ -28,6 +28,15 @@ set(DEPS_ROOT         ${CMAKE_BINARY_DIR}/_deps)
 set(CHRONO_BUILD_DIR  ${DEPS_ROOT}/chrono-build)
 set(CHRONO_INSTALL_DIR ${DEPS_ROOT}/chrono-install)
 
+set(CHRONO_EXTRA_CMAKE_ARGS "")
+if(APPLE)
+  # Without this, on macOS, dyld can't find the libraries
+  list(APPEND CHRONO_EXTRA_CMAKE_ARGS
+    -DCMAKE_MACOSX_RPATH:BOOL=ON
+    -DCMAKE_INSTALL_NAME_DIR:STRING=@rpath
+  )
+endif()
+
 if(NOT EXISTS "${CHRONO_SRC_DIR}/CMakeLists.txt")
   message(FATAL_ERROR "Chrono submodule not found at ${CHRONO_SRC_DIR}. Run: git submodule update --init --recursive")
 endif()
@@ -41,6 +50,8 @@ ExternalProject_Add(chrono
     -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
     -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
     -DBUILD_TESTING:BOOL=OFF
+
+    ${CHRONO_EXTRA_CMAKE_ARGS}
 
     -DCH_ENABLE_MODULE_VEHICLE:BOOL=${CSIM_ENABLE_CHRONO_VEHICLE}
     -DCH_ENABLE_MODULE_SENSOR:BOOL=${CSIM_ENABLE_CHRONO_SENSOR}
