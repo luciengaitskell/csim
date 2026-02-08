@@ -22,6 +22,7 @@
             ninja
             pkg-config
             eigen
+            llvmPackages.openmp
           ];
 
           shellHook = ''

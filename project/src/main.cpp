@@ -67,8 +67,10 @@ int main() {
   ChTimer timer;
   timer.start();
 
+  auto sys = vehicle.GetSystem();
+  // can enable threading, but pointless for this simple example
+  // sys->SetNumThreads(2);
   for (;;) {
-    auto sys = vehicle.GetSystem();
     double t = sys->GetChTime();
     if (t >= t_end)
       break;
