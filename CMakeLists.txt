@@ -1,0 +1,105 @@
+cmake_minimum_required(VERSION 3.21)
+project(csim_superbuild LANGUAGES NONE)
+
+include(ExternalProject)
+
+if(NOT CMAKE_CONFIGURATION_TYPES)
+  if(NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
+    # chrono is significantly faster to run in Release mode
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
+    message(NOTICE "CMAKE_BUILD_TYPE not specified, defaulting to ${CMAKE_BUILD_TYPE}")
+  else()
+    message(NOTICE "CMAKE_BUILD_TYPE already set to ${CMAKE_BUILD_TYPE}")
+  endif()
+else()
+  message(NOTICE "Ignoring CMAKE_BUILD_TYPE for multi-config generators")
+endif()
+
+# -------- Chrono modules
+set(CHRONO_MODULE_ARGS "")
+
+function(csim_chrono_module module_name default_value)
+  string(TOUPPER "${module_name}" _mod_upper)
+  set(_csim_var "CSIM_ENABLE_CHRONO_${_mod_upper}")
+
+  # Allow user to enable/disable in superbuild
+  option(${_csim_var} "Build Chrono ${module_name} module" ${default_value})
+
+  list(APPEND CHRONO_MODULE_ARGS
+    "-DCH_ENABLE_MODULE_${_mod_upper}:BOOL=${${_csim_var}}"
+  )
+  set(CHRONO_MODULE_ARGS ${CHRONO_MODULE_ARGS} PARENT_SCOPE)
+endfunction()
+
+csim_chrono_module(vehicle   ON)
+csim_chrono_module(sensor    OFF)
+csim_chrono_module(vsg       OFF)
+# --------
+
+set(CHRONO_SRC_DIR ${CMAKE_SOURCE_DIR}/third_party/chrono)
+
+set(DEPS_ROOT         ${CMAKE_BINARY_DIR}/_deps)
+set(CHRONO_BUILD_DIR  ${DEPS_ROOT}/chrono-build)
+set(CHRONO_INSTALL_DIR ${DEPS_ROOT}/chrono-install)
+
+set(CHRONO_EXTRA_CMAKE_ARGS "")
+if(APPLE)
+  # Without this, on macOS, dyld can't find the libraries
+  list(APPEND CHRONO_EXTRA_CMAKE_ARGS
+    -DCMAKE_MACOSX_RPATH:BOOL=ON
+    -DCMAKE_INSTALL_NAME_DIR:STRING=@rpath
+  )
+endif()
+
+if(NOT EXISTS "${CHRONO_SRC_DIR}/CMakeLists.txt")
+  message(FATAL_ERROR "Chrono submodule not found at ${CHRONO_SRC_DIR}. Run: git submodule update --init --recursive")
+endif()
+
+ExternalProject_Add(chrono
+  SOURCE_DIR  ${CHRONO_SRC_DIR}
+  BINARY_DIR  ${CHRONO_BUILD_DIR}
+  INSTALL_DIR ${CHRONO_INSTALL_DIR}
+
+  CMAKE_ARGS
+    -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
+    -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+    -DBUILD_TESTING:BOOL=OFF
+
+    ${CHRONO_EXTRA_CMAKE_ARGS}
+
+  ${CHRONO_MODULE_ARGS}
+
+  # Force the install step to run when building this external project
+  INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target install
+
+  LOG_CONFIGURE 1
+  LOG_BUILD 1
+  LOG_INSTALL 1
+  LOG_OUTPUT_ON_FAILURE 1
+)
+
+ExternalProject_Add(project-external
+  SOURCE_DIR ${CMAKE_SOURCE_DIR}/project
+  BINARY_DIR ${CMAKE_BINARY_DIR}/project-build
+  DEPENDS chrono
+
+  BUILD_ALWAYS TRUE
+
+  CMAKE_ARGS
+    -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+    -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON
+
+    # directory containing chrono-config.cmake
+    -DChrono_DIR:PATH=${CHRONO_INSTALL_DIR}/lib/cmake/Chrono
+
+  INSTALL_COMMAND ""
+)
+
+# Export compile_commands.json to the top build directory
+add_custom_target(compile_commands ALL
+  DEPENDS project-external
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          ${CMAKE_BINARY_DIR}/project-build/compile_commands.json
+          ${CMAKE_BINARY_DIR}/compile_commands.json
+)
+
