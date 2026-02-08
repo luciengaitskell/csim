@@ -15,11 +15,26 @@ else()
   message(NOTICE "Ignoring CMAKE_BUILD_TYPE for multi-config generators")
 endif()
 
-# -------- Modules
-set(CSIM_ENABLE_CHRONO_VEHICLE ON  CACHE BOOL "Build Chrono Vehicle module")
-set(CSIM_ENABLE_CHRONO_SENSOR  OFF CACHE BOOL "Build Chrono Sensor module")
-set(CSIM_ENABLE_CHRONO_VSG     OFF CACHE BOOL "Build Chrono VSG module")
-set(CSIM_ENABLE_CHRONO_IRRLICHT OFF CACHE BOOL "Build Chrono Irrlicht module")
+# -------- Chrono modules
+set(CHRONO_MODULE_ARGS "")
+
+function(csim_chrono_module module_name default_value)
+  string(TOUPPER "${module_name}" _mod_upper)
+  set(_csim_var "CSIM_ENABLE_CHRONO_${_mod_upper}")
+
+  # Allow user to enable/disable in superbuild
+  option(${_csim_var} "Build Chrono ${module_name} module" ${default_value})
+
+  list(APPEND CHRONO_MODULE_ARGS
+    "-DCH_ENABLE_MODULE_${_mod_upper}:BOOL=${${_csim_var}}"
+  )
+  set(CHRONO_MODULE_ARGS ${CHRONO_MODULE_ARGS} PARENT_SCOPE)
+endfunction()
+
+csim_chrono_module(vehicle   ON)
+csim_chrono_module(sensor    OFF)
+csim_chrono_module(vsg       OFF)
+csim_chrono_module(irrlicht  OFF)
 # --------
 
 set(CHRONO_SRC_DIR ${CMAKE_SOURCE_DIR}/third_party/chrono)
@@ -53,10 +68,7 @@ ExternalProject_Add(chrono
 
     ${CHRONO_EXTRA_CMAKE_ARGS}
 
-    -DCH_ENABLE_MODULE_VEHICLE:BOOL=${CSIM_ENABLE_CHRONO_VEHICLE}
-    -DCH_ENABLE_MODULE_SENSOR:BOOL=${CSIM_ENABLE_CHRONO_SENSOR}
-    -DCH_ENABLE_MODULE_VSG:BOOL=${CSIM_ENABLE_CHRONO_VSG}
-    -DCH_ENABLE_MODULE_IRRLICHT:BOOL=${CSIM_ENABLE_CHRONO_IRRLICHT}
+  ${CHRONO_MODULE_ARGS}
 
   # Force the install step to run when building this external project
   INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target install
