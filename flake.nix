@@ -15,19 +15,18 @@
       in
       {
         devShells.default = pkgs.mkShell {
-          packages = with pkgs; [
+          nativeBuildInputs = with pkgs; [
             # https://github.com/NixOS/nixpkgs/issues/308482
             clang-tools # super important, otherwise clangd fails to find headers
             cmake
             ninja
             pkg-config
+          ];
+
+          buildInputs = with pkgs; [
             eigen
             llvmPackages.openmp
           ];
-
-          shellHook = ''
-            export Eigen3_ROOT="${pkgs.eigen}"
-          '';
         };
       }
     );
