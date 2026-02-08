@@ -34,7 +34,6 @@ endfunction()
 csim_chrono_module(vehicle   ON)
 csim_chrono_module(sensor    OFF)
 csim_chrono_module(vsg       OFF)
-csim_chrono_module(irrlicht  OFF)
 # --------
 
 set(CHRONO_SRC_DIR ${CMAKE_SOURCE_DIR}/third_party/chrono)
